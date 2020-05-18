@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sockets="http://www.mulesoft.org/schema/mule/sockets"
+	xmlns:elasticsearch="http://www.mulesoft.org/schema/mule/elasticsearch"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/elasticsearch http://www.mulesoft.org/schema/mule/elasticsearch/current/mule-elasticsearch.xsd
+http://www.mulesoft.org/schema/mule/sockets http://www.mulesoft.org/schema/mule/sockets/current/mule-sockets.xsd">
+
+	<flow name="get-usuarios"
+		doc:id="f3306663-6579-4ad1-ba69-af274a5ee0bb">
+		<http:listener doc:name="Listener"
+			doc:id="d4ce4128-ffa5-45d3-911e-6003112a23ff"
+			config-ref="HTTP_Listener_config" path="/users" />
+		<try doc:name="Try" doc:id="26730f72-1b0a-4af6-a45c-feacc80ae9e1" >
+			<http:request method="GET" doc:name="Get usuarios" doc:id="1acd56df-1ed2-443f-8365-9cfec4c23298" config-ref="HTTP_Request_configuration" path="/users" />
+			<set-payload value="#[payload]" doc:name="set usuarios" doc:id="39270e64-15cc-4478-b982-c47dc0c60a20" />
+			<logger level="INFO" doc:name="INFO END" doc:id="84f22295-ff12-47b0-a908-abc68aea0d62" message="Usuarios econtrados: #[sizeOf(payload)]" category="${logcat}" />
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="6693412b-4c22-4433-94f8-93080ad50164" >
+					<set-payload value='#[{"message": "There was a problem"}]' doc:name="Set error" doc:id="d036ef28-a1c5-4285-b36f-357ac941f61f" />
+					<logger level="ERROR" doc:name="Error get-usuarios" doc:id="9ee1e28a-d4db-48e1-8d7c-cb2a3d060630" message="error-get-usuarios: #[error.description]" category="${logcat}" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+	</flow>
+	<flow name="get-usuario"
+		doc:id="857220ea-c5e4-46ed-b9ef-3ec8c0cad170">
+		<http:listener doc:name="Listener"
+			doc:id="6fa0358a-4e71-430e-84cc-97089d5c2c72"
+			config-ref="HTTP_Listener_config" path="/users/{id}" />
+		<try doc:name="Try" doc:id="9c056cb8-5dae-4d9e-b8d1-e8e412bdb22e">
+			<http:request method="GET" doc:name="Get usuario"
+				doc:id="212c1a7a-21ee-41e6-8fd7-ef371a340ec9"
+				config-ref="HTTP_Request_configuration" path="/users/{id}">
+				<http:uri-params><![CDATA[#[output application/java
+---
+{
+	id : attributes.uriParams.id
+}]]]></http:uri-params>
+			</http:request>
+			<set-payload value="#[payload]" doc:name="Set usuario" doc:id="c71d3032-4e5c-4cb4-bdcc-b72d5b0fcd85" />
+			<logger level="INFO" doc:name="INFO END" doc:id="9683a845-b3b7-4850-afde-8c8736f0da9d" message='Usuario encontrado: #["id: " ++ payload.id ++ ", name: " ++ payload.name ++ ", username: " ++ payload.username]' category="${logcat}" />
+			<error-handler>
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="cb8b814d-8f1f-456d-a204-e21dca8a41e8" >
+					<set-payload value='#[%dw 2.0
+output application/json
+---
+{"message": "User: " ++ attributes.uriParams.id ++ " no found"}]' doc:name="Set error" doc:id="26c2bd61-1642-4203-b29f-ad449db6c33e" />
+					<logger level="ERROR" doc:name="Error get-usuario" doc:id="3e690d6a-a9b5-4211-816c-b64dabece766" message="error-get-usuario: #[error.description]" category="${logcat}" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+	</flow>
+
+</mule>
